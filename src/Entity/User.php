@@ -18,10 +18,15 @@ use Symfony\Component\Uid\Uuid;
 use function Symfony\Component\Clock\now;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: '`user`')]
+#[ORM\Table(name: 'app_user')]
 #[ApiResource(
     operations: [
-        new Get(),
+        new Get(
+            uriTemplate: '/users/{id}',
+            controller: UserController::class . '::getUserById',
+            read: false,
+            deserialize: true
+        ),
         new GetCollection(),
         new Post(
             uriTemplate: '/users',

@@ -1,8 +1,10 @@
 <?php
+
 namespace App\Controller;
 
 use App\Entity\Product;
 use App\Entity\User;
+use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,20 +23,11 @@ class UserController extends AbstractController
         $this->entityManager = $entityManager;
         $this->passwordHasher = $passwordHasher;
     }
+
     public function registerUser(Request $request, EntityManagerInterface $em): JsonResponse
     {
-       dump($request);
-        $data = json_decode($request->getContent(), true);
-        dump($data);
-//        if (empty($data['fullName']) || empty($data['email']) || empty($data['password'])) {
-//            return  new JsonResponse(
-//                [
-//                    "" => "missing data"
-//                ],
-//                422
-//            );
-//        }
 
+        $data = json_decode($request->getContent(), true);
         $user = new User();
 
         $user->setFullName($data['fullName']);
@@ -42,8 +35,6 @@ class UserController extends AbstractController
 
         $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
         $user->setPasswordHash($hashedPassword);
-
-
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
@@ -54,5 +45,24 @@ class UserController extends AbstractController
                 'name' => $user->getFullName(),
             ],
             201
-        );    }
+        );
+    }
+
+    public function getUserById(string $id , UserRepository $userRepository): JsonResponse
+    {
+        $user = $userRepository->find($id);
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Usuari no trobat'], 404);
+        }
+
+        return new JsonResponse([
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'bio' => $user->getBio(),
+            'fullName' => $user->getFullName(),
+            'mail' =>  $user->getEmail(),
+            'avatarUrl' => $user->getAvatarUrl(),
+        ]);
+    }
 }

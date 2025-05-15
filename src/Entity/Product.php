@@ -62,6 +62,9 @@ use Symfony\Component\Uid\Uuid;
     #[ORM\Column(nullable: true)]
     private ?float $remunerationEuros = null;
 
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $thumbnailRatio = null;
+
     public function __construct()
     {
         $this->id = Uuid::v4();
@@ -187,6 +190,18 @@ use Symfony\Component\Uid\Uuid;
     public function setRemunerationEuros(?float $remunerationEuros): static
     {
         $this->remunerationEuros = $remunerationEuros;
+
+        return $this;
+    }
+
+    public function getThumbnailRatio(): ?float
+    {
+        return $this->thumbnailRatio;
+    }
+
+    public function setThumbnailRatio(?float $thumbnailRatio): self
+    {
+        $this->thumbnailRatio = $thumbnailRatio;
 
         return $this;
     }

@@ -12,9 +12,8 @@ class ProductController extends AbstractController
 {
     public function createProduct(Request $request, EntityManagerInterface $em): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $data = json_decode($request->request->get('data'), true); // Use $request->request per obtenir dades de formularis
 
-        dump($data);
         $product = new Product();
 
         $product->setName($data['name'] ?? '');
@@ -23,7 +22,30 @@ class ProductController extends AbstractController
         $product->setDescription($data['description'] ?? '');
         $product->setRemuneration($data['remuneration'] ?? 0);
         $product->setRemunerationEuros($data['remunerationEuros'] ?? null);
-        $product->setImages($data['images'] ?? []);
+
+        $imageFiles = $request->files->get('images'); // Obtenir els fitxers d'imatges
+
+        $imagePaths = [];
+
+        if ($imageFiles) {
+            dump($imageFiles);
+            foreach ($imageFiles as $index => $image) {
+                $uploadsDir = $this->getParameter('uploads_directory');
+                $imagePath = $image->move($uploadsDir, $image->getClientOriginalName());
+                $imagePaths[]=$imagePath->getFileName();
+                if ($index === 0) {
+//                    $imagePath = $movedImage->getPathname();
+                    [$width, $height] = getimagesize($imagePath);
+                    if ($width > 0) {
+                        $thumbnailRatio = $height / $width;
+                        $product->setThumbnailRatio($thumbnailRatio);
+                    }
+                }
+
+            }
+        }
+
+        $product->setImages($imagePaths);
 
         $currentDate = new \DateTime();
         $product->setCreatedAt($currentDate);
@@ -31,7 +53,6 @@ class ProductController extends AbstractController
 
         $em->persist($product);
         $em->flush();
-
 
         return new JsonResponse(
             [
@@ -43,8 +64,15 @@ class ProductController extends AbstractController
         );
     }
 
-    public function getAllCompact(EntityManagerInterface $em): JsonResponse
+
+    public function getAllCompact(Request $request, EntityManagerInterface $em): JsonResponse
     {
+        $allHeaders = $request->headers->all();
+
+        $authHeader = $request->headers->get('Authorization');
+
+        dump($allHeaders, $authHeader);
+
         $products = $em->getRepository(Product::class)->findAll();
 
         $compactData = [];
@@ -52,14 +80,12 @@ class ProductController extends AbstractController
             $compactData[] = [
                 'id' => $product->getId(),
                 'name' => $product->getName(),
-                'aspectRatio' => mt_rand(4, 30) / 10,
+                'aspectRatio' => $product->getThumbnailRatio(),
                 'ownerId' => $product->getOwnerId(),
                 'remuneration' => $product->getRemuneration(),
                 'image' => $product->getImages()[0],
             ];
-
         }
-
         return new JsonResponse($compactData);
     }
 }
