@@ -18,15 +18,11 @@ use Psr\Log\LoggerInterface;
 
 class MessageController extends AbstractController
 {
-    private $hub;
     private $em;
-    private $logger;
 
-    public function __construct(EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher, HubInterface $hub, LoggerInterface $logger)
+    public function __construct(EntityManagerInterface $entityManager)
     {
         $this->em = $entityManager;
-        $this->hub = $hub;
-        $this->logger = $logger;
 
     }
 
@@ -36,14 +32,13 @@ class MessageController extends AbstractController
      * @return JsonResponse
      * @throws \Exception
      */
-    public function createMessage(Request $request, UserRepository $userRepository): JsonResponse
+    public function createMessage(Request $request, UserRepository $userRepository, HubInterface $hub): JsonResponse
     {
 
         $data = json_decode($request->getContent(), true);
 
         dump($data);
 
-        $this->logger->info('Data rebuda', $data ?: []);
 
         $message = new Message();
         $message->setAuthor( $userRepository->find($data['author']));
@@ -66,9 +61,7 @@ class MessageController extends AbstractController
             $mercureData
         );
 
-        $this->logger->info('Publicant update Mercure');
-        $this->hub->publish($update);
-        $this->logger->info('Publicat update Mercure');
+        $hub->publish($update);
 
         return new JsonResponse(['status' => 'message sent']);
 

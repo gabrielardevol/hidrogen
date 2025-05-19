@@ -31,3 +31,5 @@ services:
     App\EventListener\MessageCreatedListener:
         tags:
             - { name: doctrine.orm.entity_listener, event: postPersist }
+
+

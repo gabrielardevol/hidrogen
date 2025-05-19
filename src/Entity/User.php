@@ -3,13 +3,17 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Controller\ProductController;
 use App\Controller\UserController;
 use App\Repository\UserRepository;
 use DateTime;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -27,6 +31,12 @@ use function Symfony\Component\Clock\now;
             read: false,
             deserialize: true
         ),
+        new Get(
+            uriTemplate: '/userPfp/{id}',
+            controller: UserController::class . '::getPfp',
+            read: false,
+            deserialize: true
+        ),
         new GetCollection(),
         new Post(
             uriTemplate: '/users',
@@ -34,6 +44,24 @@ use function Symfony\Component\Clock\now;
             read: false,
             deserialize: true
         ),
+        new Post(
+            uriTemplate: '/users/{userId}/favourites/{productId}',
+            controller: UserController::class . '::addFavouriteProduct',
+            read: false,
+            deserialize: false,
+            name: 'user_add_favourite_product'
+        ),
+        new Delete(
+            uriTemplate: '/users/{userId}/favourites/{productId}',
+            controller: UserController::class . '::removeFavouriteProduct',
+            read: false,
+            deserialize: false,
+            name: 'user_remove_favourite_product'
+        ),
+        new Post(
+            uriTemplate: '/updateUser',
+            controller: UserController::class . '::updateUser'
+        )
     ])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -77,6 +105,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $bio = null;
 
+    #[ORM\Column(type: 'array')]
+    private array $favouriteProducts = [];
+
     public function __construct()
     {
         $this->id = Uuid::v4();
@@ -85,8 +116,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->lastLogin = new DateTime();
         $this->isActive = false;
         $this->bio = null;
-        $this->avatarUrl = null;
+        $this->avatarUrl = "avatar.png";
         $this->role = 0;
+        $this->favouriteProducts = [];
 
 
     }
@@ -241,6 +273,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getPassword(): ?string
     {
         return $this->passwordHash;
+    }
+
+    public function getFavouriteProducts(): array
+    {
+        return $this->favouriteProducts;
+    }
+
+    public function addFavouriteProduct(string $productId): self
+    {
+        if (!in_array($productId, $this->favouriteProducts, true)) {
+            $this->favouriteProducts[] = $productId;
+        }
+
+        return $this;
+    }
+
+    public function removeFavouriteProduct(string $productId): self
+    {
+        $this->favouriteProducts = array_filter(
+            $this->favouriteProducts,
+            fn($id) => $id !== $productId
+        );
+
+        $this->favouriteProducts = array_values($this->favouriteProducts);
+
+        return $this;
     }
 
     public function getUserIdentifier(): string

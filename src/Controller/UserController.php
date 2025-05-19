@@ -61,8 +61,76 @@ class UserController extends AbstractController
             'email' => $user->getEmail(),
             'bio' => $user->getBio(),
             'fullName' => $user->getFullName(),
-            'mail' =>  $user->getEmail(),
             'avatarUrl' => $user->getAvatarUrl(),
         ]);
+    }
+
+    public function addFavouriteProduct(string $userId, string $productId)
+    {
+        $user = $this->entityManager->getRepository(User::class)->find($userId);
+        if (!$user) {
+            return new JsonResponse(['error' => 'User not found'], 404);
+        }
+
+        $user->addFavouriteProduct($productId);
+        $this->entityManager->flush();
+
+        return new JsonResponse(['status' => 'Product added to favourites']);
+    }
+
+    public function removeFavouriteProduct(string $userId, string $productId)
+    {
+        $user = $this->entityManager->getRepository(User::class)->find($userId);
+        if (!$user) {
+            return new JsonResponse(['error' => 'User not found'], 404);
+        }
+
+        $user->removeFavouriteProduct($productId);
+        $this->entityManager->flush();
+
+        return new JsonResponse(['status' => 'Product removed from favourites']);
+    }
+
+    public function updateUser(Request $request, UserRepository $userRepository): JsonResponse {
+
+        $data = json_decode($request->request->get('data'), true); // Use $request->request per obtenir dades de formularis
+        dump($data);
+        $imageFiles = $request->files->get('images'); // Obtenir els fitxers d'imatges
+        dump($imageFiles);
+
+        $user = $userRepository->find($data['id']);
+        dump($user);
+        $user->setFullName($data['fullName']);
+        $user->setBio($data['bio']);
+        $user->setEmail($data['email']);
+
+
+        $uploadsDir = $this->getParameter('uploads_directory');
+
+        if ($imageFiles){
+            $movedFile = $imageFiles[0]->move($uploadsDir, $imageFiles[0]->getClientOriginalName());
+
+            $filename = $movedFile->getFilename();
+
+            $user->setAvatarUrl($filename);
+        }
+
+
+
+        $this->entityManager->flush();
+
+        return new JsonResponse([
+            'message' => 'User updated successfully',
+        ], 200);
+    }
+
+    public function getPfp(string $id, UserRepository $userRepository) {
+        $user = $userRepository->find($id);
+        return new JsonResponse(
+            [
+                'avatar' => $user->getAvatarUrl(),
+            ]
+        );
+
     }
 }

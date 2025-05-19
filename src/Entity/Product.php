@@ -15,9 +15,24 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 #[ApiResource(
     operations: [
-        new Get(),
+        new Get(
+            uriTemplate: '/products/{id}/{userId}',
+            controller: ProductController::class . '::getById',
+
+        ),
         new GetCollection(
+            uriTemplate: '/productsByUser/{userId}', //relative to user, NOT MADE BY USER
             controller: ProductController::class . '::getAllCompact',
+            read: false,
+            deserialize: false,
+            name: 'get_compact_products',
+        ),
+        new GetCollection(
+          uriTemplate: '/productsPostedBy/{userId}',
+          controller: ProductController::class . '::searchByUserId',
+            read: false,
+            deserialize: false,
+            name: 'get_products_made_by_user',
         ),
         new Post(
             uriTemplate: '/products',
@@ -25,9 +40,25 @@ use Symfony\Component\Uid\Uuid;
             read: false,
             deserialize: true
         ),
+        new GetCollection(
+            uriTemplate: '/productsByTerm/{userId}',
+            controller: ProductController::class . '::searchByTerm',
+            read: false,
+            deserialize: false,
+            name: 'search_products',
+        ),
+
+        new Post(
+            uriTemplate: '/reserveProduct/{userId}/{productId}',
+            controller: ProductController::class . '::reserveProduct',
+        )
+
     ]
 )] class Product
 {
+
+
+
     #[ORM\Id]
     #[ORM\Column]
     private string $id;
@@ -35,8 +66,9 @@ use Symfony\Component\Uid\Uuid;
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $ownerId = null;
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $owner = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $buyerId = null;
@@ -50,7 +82,7 @@ use Symfony\Component\Uid\Uuid;
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTime $deletedAt = null;
 
-    #[ORM\Column(type: Types::ARRAY)]
+    #[ORM\Column(type: 'array')]
     private array $images = [];
 
     #[ORM\Column(length: 4000)]
@@ -68,6 +100,7 @@ use Symfony\Component\Uid\Uuid;
     public function __construct()
     {
         $this->id = Uuid::v4();
+        $this->images = [];
     }
     public function getId(): ?string
     {
@@ -86,17 +119,18 @@ use Symfony\Component\Uid\Uuid;
         return $this;
     }
 
-    public function getOwnerId(): ?string
+    public function getOwner(): ?User
     {
-        return $this->ownerId;
+        return $this->owner;
     }
 
-    public function setOwnerId(string $ownerId): static
+    public function setOwner(?User $owner): static
     {
-        $this->ownerId = $ownerId;
+        $this->owner = $owner;
 
         return $this;
     }
+
 
     public function getBuyerId(): ?string
     {
