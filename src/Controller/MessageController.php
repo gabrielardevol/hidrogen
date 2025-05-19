@@ -34,6 +34,7 @@ class MessageController extends AbstractController
      */
     public function createMessage(Request $request, UserRepository $userRepository, HubInterface $hub): JsonResponse
     {
+        dump('entered createMessage()');
 
         $data = json_decode($request->getContent(), true);
 
@@ -61,7 +62,9 @@ class MessageController extends AbstractController
             $mercureData
         );
 
-        $hub->publish($update);
+        dump($update);
+        dump($hub);
+        dump($hub->publish($update));
 
         return new JsonResponse(['status' => 'message sent']);
 

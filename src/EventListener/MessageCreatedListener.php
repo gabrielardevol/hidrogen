@@ -23,7 +23,7 @@ class MessageCreatedListener
 
         dump("message listener");
         $update = new Update(
-            topics: 'chat/global',
+            'https://chat/messages',
             data: json_encode([
                 'id' => $message->getId(),
                 'content' => $message->getContent(),
@@ -32,6 +32,7 @@ class MessageCreatedListener
             ])
         );
 
+        dump($update);
         $this->hub->publish($update);
     }
 }
