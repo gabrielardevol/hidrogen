@@ -1,0 +1,7 @@
+{
+    auto_https off
+}
+
+http://localhost:3000 {
+    respond "Hola HTTP sin redirección"
+}

@@ -22,6 +22,12 @@ use Doctrine\ORM\Mapping as ORM;
             read: false,
             deserialize: true
         ),
+        new Get(
+            uriTemplate: '/messages/{userId}/{chatId}',
+            controller: MessageController::class . '::getChat',
+            read: false,
+            deserialize: true
+        ),
     ]
 )] class Message
 {
@@ -43,6 +49,9 @@ use Doctrine\ORM\Mapping as ORM;
 
     #[ORM\Column(length: 255)]
     private ?string $product = null;
+
+//    #[ORM\Column(length: 255)]
+//    private ?string $request = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTime $createdAt = null;
@@ -98,6 +107,18 @@ use Doctrine\ORM\Mapping as ORM;
 
         return $this;
     }
+
+//    public function getRequest(): ?string
+//    {
+//        return $this->request;
+//    }
+//
+//    public function setRequest(string $request): static
+//    {
+//        $this->request = $request;
+//
+//        return $this;
+//    }
 
     public function getCreatedAt(): ?\DateTime
     {

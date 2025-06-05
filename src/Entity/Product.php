@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
@@ -15,10 +16,10 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 #[ApiResource(
     operations: [
-        new Get(
-            uriTemplate: '/products/{id}/{userId}',
-            controller: ProductController::class . '::getById',
 
+        new Delete(
+            uriTemplate: '/products/{id}',
+            controller: ProductController::class . '::deleteProduct',
         ),
         new GetCollection(
             uriTemplate: '/productsByUser/{userId}', //relative to user, NOT MADE BY USER
@@ -47,10 +48,21 @@ use Symfony\Component\Uid\Uuid;
             deserialize: false,
             name: 'search_products',
         ),
-
         new Post(
-            uriTemplate: '/reserveProduct/{userId}/{productId}',
+            uriTemplate: '/products/{productId}/reserve/{userId}',
             controller: ProductController::class . '::reserveProduct',
+        ),
+        new Post(
+            uriTemplate: '/products/{productId}/sell/{userId}',
+            controller: ProductController::class . '::sellProduct',
+        ),
+        new Get(
+            uriTemplate: '/products/{id}/{userId}',
+            controller: ProductController::class . '::getById',
+        ),
+        new Post(
+            uriTemplate: '/productAssignBuyer/{productId}/{buyerId}',
+            controller: ProductController::class . '::assignBuyer',
         )
 
     ]
@@ -90,9 +102,6 @@ use Symfony\Component\Uid\Uuid;
 
     #[ORM\Column]
     private ?int $remuneration = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?float $remunerationEuros = null;
 
     #[ORM\Column(type: 'float', nullable: true)]
     private ?float $thumbnailRatio = null;
@@ -212,18 +221,6 @@ use Symfony\Component\Uid\Uuid;
     public function setRemuneration(int $remuneration): static
     {
         $this->remuneration = $remuneration;
-
-        return $this;
-    }
-
-    public function getRemunerationEuros(): ?float
-    {
-        return $this->remunerationEuros;
-    }
-
-    public function setRemunerationEuros(?float $remunerationEuros): static
-    {
-        $this->remunerationEuros = $remunerationEuros;
 
         return $this;
     }

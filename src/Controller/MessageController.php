@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Message;
 use App\Entity\Product;
 use App\Entity\User;
+use App\Repository\ProductRepository;
 use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -68,6 +69,25 @@ class MessageController extends AbstractController
 
         return new JsonResponse(['status' => 'message sent']);
 
+    }
+
+    public function getChat(string $chatId, string $userId, ProductRepository $productRepository) {
+//        buscar a productRepository; tot lo que aparegui posar-
+        $messages = $productRepository->find($chatId);
+
+
+        foreach ($messages as $message) {
+            dump($message->getBuyerId());
+
+            $compactData[] = [
+                'id' => $message->getId(),
+            ];
+        }
+
+
+        dump($compactData);
+        // ha de tornar publisherUserId i interestedUserId;
+        return new JsonResponse($compactData);
     }
 
 }

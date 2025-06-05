@@ -1,0 +1,29 @@
+{
+        auto_https disable_redirects
+}
+
+        localhost:3000 {
+                route {
+                        mercure {
+                                transport_url /hub
+                                publish_allowed
+                                subscribe_allowed
+                                anonymous
+                                publisher_jwt_key {env.MERCURE_PUBLISHER_JWT_KEY}
+                                subscriber_jwt_key {env.MERCURE_SUBSCRIBER_JWT_KEY}
+                        }
+        
+                respond /.well-known/mercure "<p>The URL of your hub is <code>/.well-known/mercure</code>.</p>" 200
+                respond /healthz 200
+                respond /robots.txt "User-agent: *\nDisallow: /" 200
+        }
+
+        log {
+                output stdout
+                format console
+    }
+
+        encode gzip
+        tls internal
+
+}

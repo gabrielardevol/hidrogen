@@ -1,4 +1,5 @@
 api_platform:
+    mercure: false
     title: Hello API Platform
     version: 1.0.0quit
     defaults:

@@ -11,24 +11,26 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Uid\Uuid;
 
 class ProductController extends AbstractController
 {
-    public function createProduct(Request $request, EntityManagerInterface $em, UserRepository $userRepository): JsonResponse
+    public function __construct(private EntityManagerInterface $entityManager) {}
+
+    public function createProduct(Request $request, UserRepository $userRepository): JsonResponse
     {
         $data = json_decode($request->request->get('data'), true); // Use $request->request per obtenir dades de formularis
 
         $product = new Product();
 
         $product->setName($data['name'] ?? '');
-        $owner = $em->getRepository(User::class)->find($data['ownerId']);
+        $owner =  $this->entityManager->getRepository(User::class)->find($data['ownerId']);
         $product->setOwner($owner);
         $product->setBuyerId($data['buyerId'] ?? null);
         $product->setDescription($data['description'] ?? '');
         $product->setRemuneration($data['remuneration'] ?? 0);
-        $product->setRemunerationEuros($data['remunerationEuros'] ?? null);
 
         $imageFiles = $request->files->get('images'); // Obtenir els fitxers d'imatges
 
@@ -58,8 +60,8 @@ class ProductController extends AbstractController
         $product->setCreatedAt($currentDate);
         $product->setUpdatedAt($currentDate);
 
-        $em->persist($product);
-        $em->flush();
+        $this->entityManager->persist($product);
+        $this->entityManager->flush();
 
         return new JsonResponse(
             [
@@ -89,7 +91,6 @@ class ProductController extends AbstractController
         $response['name'] = $product->getName();
         $response['description'] = $product->getDescription();
         $response['remuneration'] = $product->getRemuneration();
-//        $response['remunerationEuros'] = $product->getRemunerationEuros();
         $response['ownerId'] = $product->getOwner()->getId();
         $response['createdAt'] = $product->getCreatedAt();
         $response['images'] = $product->getImages();
@@ -102,21 +103,20 @@ class ProductController extends AbstractController
 
     }
 
-    public function getAllCompact(string $userId, Request $request, EntityManagerInterface $em): JsonResponse
+    public function getAllCompact(string $userId, Request $request): JsonResponse
     {
-        // Suposem que reps l'userId com a header, pots canviar això si l’obtens d’un token JWT
 
         if (!$userId) {
             return new JsonResponse(['error' => 'User ID required'], 400);
         }
 
-        $user = $em->getRepository(User::class)->find($userId);
+        $user =  $this->entityManager->getRepository(User::class)->find($userId);
         if (!$user) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
         $favourites = $user->getFavouriteProducts(); // suposadament un array d'IDs
-        $products = $em->getRepository(Product::class)->findAll();
+        $products =  $this->entityManager->getRepository(Product::class)->findAll();
 
         $compactData = [];
 
@@ -139,6 +139,16 @@ class ProductController extends AbstractController
 
         return new JsonResponse($compactData);
     }
+
+    public function deleteProduct(string $id) {
+        $product = $this->entityManager->getRepository(Product::class)->find($id);
+
+        if (!$product) {
+            throw new NotFoundHttpException('Product not found');
+        }
+
+        $this->entityManager->remove($product);
+        $this->entityManager->flush();    }
 
     public function searchByTerm(
         string                 $userId,
@@ -174,7 +184,7 @@ class ProductController extends AbstractController
 
     }
 
-    public function searchByUserId(string $userId, ProductRepository $productRepository, EntityManagerInterface $em): JsonResponse
+    public function searchByUserId(string $userId, ProductRepository $productRepository): JsonResponse
     {
         $products = $productRepository->createQueryBuilder('p')
             ->andWhere('p.owner = :userId')
@@ -182,7 +192,7 @@ class ProductController extends AbstractController
             ->getQuery()
             ->getResult();
 
-        $user = $em->getRepository(User::class)->find($userId);
+        $user =  $this->entityManager->getRepository(User::class)->find($userId);
         $favourites = $user->getFavouriteProducts();
         $compactData = [];
         foreach ($products as $product) {
@@ -200,10 +210,20 @@ class ProductController extends AbstractController
 
     }
 
-    public function reserveProduct(string $userId, string $productId, ProductRepository $productRepository, EntityManagerInterface $em): JsonResponse {
+    public function reserveProduct(string $userId, string $productId, ProductRepository $productRepository): JsonResponse {
         $product = $productRepository->find($productId);
         $product->setBuyerId($userId);
-        $em->flush();
+        $this->entityManager->flush();
+        return new JsonResponse([
+            'message' => 'Product updated successfully',
+
+        ], 200);
+    }
+
+    public function assignBuyer(string $productId, string $buyerId, ProductRepository $productRepository): JsonResponse {
+        $product = $productRepository->find($productId);
+        $product->setBuyerId($buyerId);
+        $this->entityManager->flush();
         return new JsonResponse([
             'message' => 'Product updated successfully',
 
