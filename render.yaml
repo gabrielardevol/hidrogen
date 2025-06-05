@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: symfony-app
+    env: php
+    plan: free
+    buildCommand: "composer install --no-dev --optimize-autoloader"
+    startCommand: "php -S 0.0.0.0:10000 -t public"
+    autoDeploy: true
+    branch: main
+    envVars:
+      - key: APP_ENV
+        value: prod
+      - key: APP_DEBUG
+        value: "0"
+      - key: APP_SECRET
+        value: "alguna_clau_molt_secreta"
+      # DATABASE_URL s'afegirà més tard un cop creïs la base de dades
